@@ -1,0 +1,36 @@
+let
+    //Get list of files in folder
+    Source =Folder.Files("\imagenes"),
+    //Remove unnecessary columns
+    //firstrowasheaders = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    RemoveOtherColumns = Table.SelectColumns(Source,{"Content", "Name"}),
+    //RemoveOtherColumns = Table.RemoveColumns(Source,{"Column1", "Column2", "Column3", "Column3"}),
+    //RemoveOtherColumns = Table.SelectColumns(Source,{"Id", "CreatedTime", "UpdatedTime"}),
+    //Creates Splitter function
+    SplitTextFunction = Splitter.SplitTextByRepeatedLengths(30000),
+    //Converts table of files to list
+    ListInput = Table.ToRows(RemoveOtherColumns),
+    //Function to convert binary of photo to multiple
+    //text values
+    ConvertOneFile = (InputRow as list) => 
+        let
+            BinaryIn = InputRow{0},
+            FileName = InputRow{1},
+            BinaryText = Binary.ToText(BinaryIn, BinaryEncoding.Base64),
+            SplitUpText = SplitTextFunction(BinaryText),
+            AddFileName = List.Transform(SplitUpText, each {FileName,_})
+        in
+            AddFileName,
+    //Loops over all photos and calls the above function
+    ConvertAllFiles = List.Transform(ListInput, each ConvertOneFile(_)),
+    //Combines lists together
+    CombineLists = List.Combine(ConvertAllFiles),
+    //Converts results to table
+    ToTable = #table(type table[Name=text,Pic=text],CombineLists),
+    //Adds index column to output table
+    AddIndexColumn = Table.AddIndexColumn(ToTable, "Index", 0, 1)
+in
+    AddIndexColumn
+
+
+//Video tutorial URL: https://www.youtube.com/watch?v=W0KyQ6w_-nI
