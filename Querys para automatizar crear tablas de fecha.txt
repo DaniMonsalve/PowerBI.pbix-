@@ -1,0 +1,39 @@
+Método DAX:
+
+Dim_Calendar DAX = ADDCOLUMNS (
+CALENDAR ( DATE( YEAR ( MIN ( FactTable[Fecha])), 01, 01), DATE( YEAR( MAX( FactTable[Fecha] ) ), 12, 31 ) ),
+"FechaSK", FORMAT ( [Date], "YYYYMMDD" ),
+"#Año", YEAR ( [Date] ),
+"#Trimestre", QUARTER ( [Date] ),
+"#Mes", MONTH ( [Date] ),
+"#Día", DAY ( [Date] ),
+"Trimestre", "T" & FORMAT ( [Date], "Q" ), 
+"Mes", FORMAT ( [Date], "MMMM" ),
+"MesCorto", FORMAT ( [Date], "MMM" ),
+"#DíaSemana", WEEKDAY ( [Date],2 ),
+"#SemanaAño", WEEKNUM ( [Date],2 ),
+"CierreSemana", ( [Date] + 7 - WEEKDAY( [Date],2 ) ),
+"Día", FORMAT ( [Date], "DDDD" ),
+"DíaCorto", FORMAT ( [Date], "DDD" ),
+"AñoTrimestre", FORMAT ( [Date], "YYYY" ) & "/T" & FORMAT ( [Date], "Q" ),
+"Año#Mes", FORMAT ( [Date], "YYYY/MM" ),
+"AñoMesCorto", FORMAT ( [Date], "YYYY/mmm" ),
+"InicioMes", EOMONTH( [Date], -1) + 1,
+"FinMes", EOMONTH( [Date], 0) )
+
+
+Método M:
+
+let
+    Source = Fact_Tickets[Fecha],
+    #"Fecha inicio" = #date(Date.Year(List.Min(Source)),1,1),
+    #"Fecha fin" = #date(Date.Year(List.Max(Source)),12,31),
+    #"Lista fechas" = {Number.From(#"Fecha inicio")..Number.From(#"Fecha fin")},
+    #"Converted to Table" = Table.FromList(#"Lista fechas", Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    #"Changed Type" = Table.TransformColumnTypes(#"Converted to Table",{{"Column1", type date}}),
+    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"Column1", "Fecha"}}),
+    #"Inserted Year" = Table.AddColumn(#"Renamed Columns", "Year", each Date.Year([Fecha]), Int64.Type),
+    #"Inserted Month" = Table.AddColumn(#"Inserted Year", "Month", each Date.Month([Fecha]), Int64.Type),
+    #"Inserted Day" = Table.AddColumn(#"Inserted Month", "Day", each Date.Day([Fecha]), Int64.Type)
+in
+    #"Inserted Day"
